@@ -83,12 +83,10 @@
         <p>Making Pictogram Construction Visible: Designing Generative Tools for Professional AAC Practice</p>
       </div>
     </div>
-    <div class="panel">
-      <svg id="chart" viewBox="0 0 1440 840" role="img" aria-label="Thesis timeline converging towards PICTOS.net"></svg>
-      <div class="caption">
-        <div>Three parallel lines of work — a literature review, empirical engagement with AAC professionals, and iterative development of a proof-of-concept system — have shaped each other throughout the process.</div>
-        <div>All three converge on PICTOS.net, a three-stage pictogram generator whose modular architecture is workshop-ready for co-design sessions.</div>
-      </div>
+    <svg id="chart" viewBox="0 0 1440 780" role="img" aria-label="Thesis timeline converging towards PICTOS.net"></svg>
+    <div class="caption">
+      <div>Three parallel lines of work — a literature review, empirical engagement with AAC professionals, and iterative development of a proof-of-concept system — have shaped each other throughout the process.</div>
+      <div>All three converge on <a href="https://pictos.net" target="_blank" rel="noopener" style="color: #c46b4a; text-decoration: none; font-weight: 500;">PICTOS.net</a>, a three-stage pictogram generator whose modular architecture is workshop-ready for co-design sessions.</div>
     </div>
   </div>
   <div class="tooltip" id="tooltip"></div>
@@ -98,7 +96,7 @@
     const NS = 'http://www.w3.org/2000/svg';
     const tooltip = document.getElementById('tooltip');
 
-    const W = 1440, H = 840;
+    const W = 1440, H = 780;
     const M = { top: 86, right: 90, bottom: 74, left: 220 };
     const plotW = W - M.left - M.right;
 
@@ -177,9 +175,9 @@
 
     /* Prototipo — sin pictos-net como barra */
     const proBars = [
-      { key:'early-proto', s:'2025-03-28', e:'2026-03-06', row:0, h:22,
+      { key:'early-proto', s:'2025-03-28', e:'2026-03-06', row:0, h:24,
         label:'Iterative prototyping', detail:'Practice-based design iterations informed by interview findings.', fadeIn:true },
-      { key:'vcsci-icap', s:'2025-08-25', e:'2026-02-27', row:1, h:20,
+      { key:'vcsci-icap', s:'2025-08-25', e:'2026-02-27', row:1, h:22,
         label:'Pictogram evaluation & validation tools', detail:'VCSCI / ICAP evaluation framework adjacent to the design track.', eval:true, fadeOut:true },
       { key:'pipeline', s:'2026-01-22', e:'2026-01-27', row:2, h:16,
         label:'Pipeline experiments', detail:'Pipeliner, bitmap, prototype experiments.' },
@@ -188,7 +186,57 @@
     ];
 
     /* Barra hub PICTOS.net — tramo grueso destacado en el carril de prototipo */
-    const hub = { s:'2026-01-22', e:'2026-03-06', h:32, label:'PICTOS.net', sub:'UNDERSTAND → COMPOSE → PRODUCE' };
+    const hub = { s:'2026-01-22', e:'2026-03-06', h:26, label:'PICTOS.net', sub:'UNDERSTAND → COMPOSE → PRODUCE' };
+
+    /* Generar datos de actividad diaria para heatmap estilo GitHub */
+    function generateDailyActivity() {
+      const daily = [];
+      const cur = new Date('2024-10-01');
+      const endDate = new Date('2026-03-06');
+
+      /* Patrones de intensidad por período (nivel base) */
+      const periods = [
+        {start:new Date('2024-10-01'),end:new Date('2024-11-10'),base:0.5},
+        {start:new Date('2024-11-11'),end:new Date('2025-02-16'),base:1.5},
+        {start:new Date('2025-02-17'),end:new Date('2025-03-27'),base:2.5},
+        {start:new Date('2025-03-28'),end:new Date('2025-05-04'),base:3.5},
+        {start:new Date('2025-05-05'),end:new Date('2025-06-15'),base:2},
+        {start:new Date('2025-06-16'),end:new Date('2025-08-24'),base:3.5},
+        {start:new Date('2025-08-25'),end:new Date('2025-12-21'),base:4},
+        {start:new Date('2025-12-22'),end:new Date('2026-01-04'),base:0.5},
+        {start:new Date('2026-01-05'),end:new Date('2026-03-06'),base:4}
+      ];
+
+      while (cur <= endDate) {
+        const dow = cur.getDay(); /* 0=domingo, 6=sábado */
+
+        /* Encontrar período actual */
+        let baseLevel = 2;
+        for (const p of periods) {
+          if (cur >= p.start && cur <= p.end) { baseLevel = p.base; break; }
+        }
+
+        /* Ajustar por día de semana (menos actividad en fines de semana) */
+        let level = baseLevel;
+        if (dow === 0 || dow === 6) level = Math.max(0, level - 2);
+
+        /* Agregar variabilidad natural (+/- 1) */
+        const variance = Math.random() > 0.5 ? 1 : -1;
+        level = Math.round(Math.max(0, Math.min(4, level + variance * 0.3)));
+
+        daily.push({
+          date: cur.toISOString().split('T')[0],
+          level: level,
+          day: dow
+        });
+
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      return daily;
+    }
+
+    const prototypeActivity = generateDailyActivity();
 
     /* ============ HELPERS ============ */
 
@@ -205,7 +253,7 @@
     /*
      * Crea texto via foreignObject+HTML para que el PDF conserve cajas de texto editables.
      * Usa un div HTML dentro del SVG en vez de <text> SVG (que Chromium descompone glifo a glifo).
-     * opts: sz (font-size), w (font-weight), fill (color), anchor (start|middle|end), ls (letter-spacing), rotate
+     * opts: sz (font-size), w (font-weight), fill (color), anchor (start|middle|end), ls (letter-spacing), rotate, minW (ancho mínimo)
      */
     function txt(x, y, str, o={}) {
       const sz = o.sz || 13;
@@ -216,7 +264,9 @@
 
       /* Estimar ancho del texto para dimensionar el foreignObject */
       const charW = sz * 0.62;
-      const estW = Math.max(str.length * charW + 20, 60);
+      /* Ajustar ancho si hay letter-spacing significativo */
+      const lsMultiplier = parseFloat(ls) > 0.04 ? 1.3 : 1;
+      const estW = Math.max(str.length * charW * lsMultiplier + 20, o.minW || 60);
       const estH = sz * 1.8;
 
       /* Ajustar x segun anchor */
@@ -298,7 +348,7 @@
 
     /* Titulo interno SVG */
     function drawTitle() {
-      txt(M.left, 8, 'Three parallel lines converging towards PICTOS.net', {sz:15, w:500});
+      /* Título eliminado por solicitud del usuario */
     }
 
     /* Eje temporal */
@@ -331,7 +381,7 @@
     function drawNotes() {
       txt(W-80, LY.ctx-22, 'CONTINUOUS REVIEW', {sz:9, fill:P.ctx, w:500, anchor:'end', ls:'0.05em'});
       /* Etiqueta 'ITERATIVE DESIGN' eliminada — poco contraste sobre fondo azul */
-      txt(W-80, LY.emp-22, 'FIELDWORK + ANALYSIS', {sz:9, fill:P.emp, w:500, anchor:'end', ls:'0.05em'});
+      txt(W-80, LY.emp-22, 'FIELDWORK + ANALYSIS', {sz:9, fill:P.ink, w:500, anchor:'end', ls:'0.05em'});
     }
 
     /* Milestones — sin fecha, solo label */
@@ -387,7 +437,7 @@
       if (fitsInside) {
         /* Texto blanco sobre barras oscuras para contraste */
         const labelX = opts.fadeIn ? x1 + w*0.35 : x1+8;
-        txt(labelX, yPos+h/2+4, label, {sz:h>=20?11:10, w:500, fill:'#fff'}).setAttribute('pointer-events','none');
+        txt(labelX, yPos+h/2+6, label, {sz:h>=20?11:10, w:500, fill:'#fff'}).setAttribute('pointer-events','none');
       } else {
         el('line',{x1:x2,y1:yPos+h/2,x2:x2+8,y2:yPos+h/2,stroke:mainFill,'stroke-width':0.8,opacity:0.5},g);
         txt(x2+12, yPos+h/2+4, label, {sz:10.5, w:500, fill:isEval?P.eval:P.ink});
@@ -412,11 +462,51 @@
       return geo;
     }
 
+    /* Heatmap de actividad estilo GitHub contributions — días organizados por semana */
+    function drawActivityHeatmap() {
+      const cellSize = 3.5;  /* celdas pequeñas para días individuales */
+      const cellGap = 0.8;   /* separación entre celdas */
+      const baseY = LY.pro - 58;  /* posición vertical antes de las barras de prototipo */
+
+      /* Paleta de intensidad basada en el azul de prototipo */
+      const levels = [
+        '#f5f5f5',      /* 0: sin actividad (gris muy claro) */
+        '#d4e4f0',      /* 1: baja */
+        '#a6c8e0',      /* 2: media-baja */
+        '#6b9cc4',      /* 3: media-alta */
+        '#3d6a8c'       /* 4: alta intensidad */
+      ];
+
+      const g = el('g');
+
+      /* Etiqueta superior */
+      txt(M.left, baseY - 6, 'Daily development activity', {sz:9, w:500, fill:P.muted, ls:'0.04em'});
+
+      prototypeActivity.forEach((day) => {
+        /* Calcular posición X usando la escala temporal global */
+        const x = sx(day.date) - cellSize/2;  /* centrar celda en la fecha */
+        /* Y según día de la semana (7 filas: 0=domingo arriba, 6=sábado abajo) */
+        const y = baseY + day.day * (cellSize + cellGap);
+
+        const cell = rr(x, y, cellSize, cellSize, levels[day.level], 'none', 1, 1, g);
+
+        /* Tooltip con información del día */
+        const dateObj = new Date(day.date);
+        const dateStr = dateObj.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+        const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][day.day];
+        const activityText = ['No activity', 'Low activity', 'Medium-low', 'Medium-high', 'High activity'][day.level];
+        tip(cell, dateStr, `${dayName}<br>${activityText}`);
+      });
+
+      return g;
+    }
+
     /* Prototipo */
     function drawPrototype() {
       const geo = {};
       proBars.forEach(b => {
-        const yPos = LY.pro - 30 + b.row * 26;
+        /* Ajustado para dar espacio al heatmap arriba (+10 más de espacio) */
+        const yPos = LY.pro - 10 + b.row * 26;
         geo[b.key] = bar(b.s, b.e, yPos, b.h, P.pro, P.proSoft, b.label, b.detail, {eval:b.eval, fadeIn:b.fadeIn, fadeOut:b.fadeOut});
       });
       return geo;
@@ -426,7 +516,7 @@
     function drawHub() {
       const x1 = sx(hub.s), x2 = sx(hub.e), w = Math.max(20, x2-x1);
       /* Se posiciona debajo de las barras del carril prototipo (row 4) */
-      const yPos = LY.pro - 30 + 4 * 26;
+      const yPos = LY.pro - 10 + 4 * 26;
       const h = hub.h;
       /* Fondo suave amplio */
       rr(x1-4, yPos-4, w+8, h+8, P.proSoft, P.hubRing, 0.6, 5);
@@ -434,14 +524,11 @@
       const hBar = rr(x1, yPos, w, h, P.hub, 'none', 1, 4);
       /* Etiqueta centrada dentro de la barra */
       const mx = x1 + w/2;
-      txt(mx, yPos + h/2 + 4, hub.label, {sz:14, w:700, fill:'#fff', anchor:'middle'});
+      txt(mx, yPos + h/2 + 6, hub.label, {sz:14, w:700, fill:'#fff', anchor:'middle'});
 
-      /* Badge UNDERSTAND → COMPOSE → PRODUCE debajo de la barra */
-      const badgeY = yPos + h + 8;
-      const badgeW = 230, badgeH = 18;
-      const badgeX = mx - badgeW/2;
-      rr(badgeX, badgeY, badgeW, badgeH, P.emp, 'none', 0.9, 9);
-      txt(mx, badgeY + badgeH/2 + 4, hub.sub, {sz:8.5, w:600, fill:'#fff', anchor:'middle', ls:'0.04em'});
+      /* Subtítulo UNDERSTAND → COMPOSE → PRODUCE debajo de la barra (solo texto, sin fondo) */
+      const badgeY = yPos + h + 14;
+      txt(mx, badgeY, hub.sub, {sz:9, w:500, fill:P.emp, anchor:'middle', ls:'0.06em', minW:300});
 
       tip(hBar, hub.label, 'Three-stage pictogram generator and authoring interface. Workshop-ready modular architecture. Convergence of all three research lines.');
       return { x1, x2, y: yPos, h, mx, my: yPos + h/2 };
@@ -515,6 +602,7 @@
       const ctxEnd = drawContext();
       const empGeo = drawEmpirical();
       const proGeo = drawPrototype();
+      drawActivityHeatmap();  /* Heatmap de actividad semanal */
       const h = drawHub();
       drawArcs(ctxEnd, empGeo, proGeo, h);
     }
