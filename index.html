@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thesis Timeline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    @page { margin: 12mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #ffffff;
+      color: #1a1a1a;
+      font-family: "Lexend", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .wrap {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 28px 24px 36px;
+    }
+    .header { margin-bottom: 14px; }
+    .title-block h1 {
+      margin: 0 0 4px;
+      font-size: clamp(24px, 3.2vw, 40px);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      font-weight: 500;
+    }
+    .title-block p {
+      margin: 0;
+      max-width: 64ch;
+      color: #777;
+      font-size: 13px;
+      line-height: 1.45;
+      font-style: italic;
+    }
+    .panel {
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 16px 12px 12px;
+      overflow: hidden;
+    }
+    svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .caption {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      color: #888;
+      font-size: 11.5px;
+      line-height: 1.45;
+    }
+    .tooltip {
+      position: fixed; pointer-events: none; z-index: 10;
+      max-width: 280px;
+      background: rgba(26,26,26,0.92); color: #fff;
+      border-radius: 6px; padding: 8px 10px;
+      font-size: 12px; line-height: 1.4;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      opacity: 0; transform: translateY(4px);
+      transition: opacity 100ms ease, transform 100ms ease;
+    }
+    .tooltip.visible { opacity: 1; transform: translateY(0); }
+    .tooltip strong { display: block; margin-bottom: 2px; }
+    .footer-note { margin-top: 10px; font-size: 11px; color: #999; }
+    @media print { .tooltip { display: none; } }
+    @media (max-width: 980px) {
+      .caption { grid-template-columns: 1fr; }
+      .wrap { padding: 16px 12px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="title-block">
+        <h1>Thesis timeline</h1>
+        <p>Making Pictogram Construction Visible: Designing Generative Tools for Professional AAC Practice</p>
+      </div>
+    </div>
+    <div class="panel">
+      <svg id="chart" viewBox="0 0 1440 840" role="img" aria-label="Thesis timeline converging towards PICTOS.net"></svg>
+      <div class="caption">
+        <div>Three parallel lines of work — a literature review, empirical engagement with AAC professionals, and iterative development of a proof-of-concept system — have shaped each other throughout the process.</div>
+        <div>All three converge on PICTOS.net, a three-stage pictogram generator whose modular architecture is workshop-ready for co-design sessions.</div>
+      </div>
+    </div>
+  </div>
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const svg = document.getElementById('chart');
+    const NS = 'http://www.w3.org/2000/svg';
+    const tooltip = document.getElementById('tooltip');
+
+    const W = 1440, H = 840;
+    const M = { top: 86, right: 90, bottom: 74, left: 220 };
+    const plotW = W - M.left - M.right;
+
+    /* Paleta con color, pensada para impresion sobre fondo blanco */
+    const P = {
+      ink: '#1a1a1a',
+      muted: '#888888',
+      grid: '#e4e4e4',
+      axis: '#aaaaaa',
+      ctx:     '#4a8c5c',   /* verde sobrio para contextual */
+      ctxSoft: '#d4e8d8',
+      emp:     '#c46b4a',   /* terracota para empirico */
+      empSoft: '#f0d8cc',
+      pro:     '#4a6d8c',   /* azul-gris para prototipo */
+      proSoft: '#ccdae8',
+      eval:    '#8a9a44',   /* oliva para evaluacion */
+      evalSoft:'#e4eacc',
+      hub:     '#2a2a2a',   /* negro para el nodo hub */
+      hubRing: '#cccccc',
+      white:   '#ffffff'
+    };
+
+    const start = new Date('2024-10-01');
+    const end   = new Date('2026-03-06');
+
+    /* Posiciones Y: milestones, contextual, prototipo (al medio), empirico (abajo) */
+    const LY = { ms: 130, ctx: 250, pro: 410, emp: 580 };
+
+    /* ============ DATOS ============ */
+
+    const milestones = [
+      { date: '2024-10-01', label: 'Thesis initiation', note: 'Official PhD commencement.' },
+      { date: '2025-04-08', label: 'Ethics approval', note: 'AUTEC ref. 25/44.' },
+      { date: '2025-09-11', label: 'PG Research Symposium', note: 'AUT Postgraduate Research Symposium.' },
+      { date: '2025-11-03', label: 'PGR9 Presentation', note: 'Confirmation of Candidature.' },
+      { date: '2026-03-06', label: 'Current state', note: 'Reference date.' }
+    ];
+
+    const ctxData = {
+      start: '2024-10-01', end: '2026-03-06',
+      label: 'Literature review',
+      note: 'Continuous review process.',
+      markers: [
+        /* Superiores (pares) — equidistantes ~80 dias */
+        { date: '2024-12-10', label: 'NSM' },
+        { date: '2025-01-15', label: 'Dual Coding Theory' },
+        { date: '2025-03-01', label: 'Sapir–Whorf' },
+        { date: '2025-04-10', label: 'ISOTYPE' },
+        { date: '2025-05-20', label: 'Comm. Pragmatics' },
+        { date: '2025-06-20', label: 'Activity Theory' },
+        { date: '2025-08-10', label: 'XAI' },
+        { date: '2025-09-15', label: 'Speech-Acts' },
+        { date: '2025-10-25', label: 'Generative AAC' },
+        { date: '2025-12-10', label: 'Symbol grounding' },
+        { date: '2026-01-20', label: 'AAC authoring tools' }
+      ]
+    };
+
+    /* Empirico reestructurado */
+    const empBars = [
+      { key:'pre-ethics', s:'2025-02-13', e:'2025-02-28', row:0, h:20,
+        label:'Preliminary conversations', detail:'AAC researcher (NZ) and ARASAAC designer — before ethics approval.' },
+      { key:'interviews', s:'2025-05-06', e:'2025-06-25', row:1, h:22,
+        label:'Formal interviews', detail:'7 semi-structured interviews, 8 participants — SLTs, special educators, AAC researchers, pictogram designers (Valparaíso / Viña del Mar).' },
+      { key:'transcription', s:'2025-07-01', e:'2025-08-31', row:2, h:20,
+        label:'Transcription & preliminary analysis', detail:'Transcription and initial thematic coding of interviews conducted in Spanish.' },
+      { key:'deep-analysis', s:'2025-09-01', e:'2026-03-06', row:3, h:20,
+        label:'Reflexive thematic analysis', detail:'Activity theory lens. Themes: vocabulary gaps, tacit professional judgement, culturally specific visual criteria.' },
+      { key:'analysis-tool', s:'2025-11-20', e:'2026-03-06', row:4, h:18,
+        label:'Interview-analysis tool', detail:'Custom tool supporting thematic analysis workflow.' }
+    ];
+
+    const empMilestones = [
+      { date:'2026-02-12', label:'Follow-up session', note:'Follow-up conversation with participants based on proof-of-concept.' }
+    ];
+
+    /* Prototipo — sin pictos-net como barra */
+    const proBars = [
+      { key:'early-proto', s:'2025-03-28', e:'2026-03-06', row:0, h:22,
+        label:'Iterative prototyping', detail:'Practice-based design iterations informed by interview findings.', fadeIn:true },
+      { key:'vcsci-icap', s:'2025-08-25', e:'2026-02-27', row:1, h:20,
+        label:'Pictogram evaluation & validation tools', detail:'VCSCI / ICAP evaluation framework adjacent to the design track.', eval:true, fadeOut:true },
+      { key:'pipeline', s:'2026-01-22', e:'2026-01-27', row:2, h:16,
+        label:'Pipeline experiments', detail:'Pipeliner, bitmap, prototype experiments.' },
+      { key:'support', s:'2026-01-30', e:'2026-02-10', row:3, h:16,
+        label:'Collector / editor tooling', detail:'Support tooling for proof-of-concept.' }
+    ];
+
+    /* Barra hub PICTOS.net — tramo grueso destacado en el carril de prototipo */
+    const hub = { s:'2026-01-22', e:'2026-03-06', h:32, label:'PICTOS.net', sub:'UNDERSTAND → COMPOSE → PRODUCE' };
+
+    /* ============ HELPERS ============ */
+
+    function d(s) { return new Date(s + 'T00:00:00'); }
+    function sx(v) { return M.left + ((d(v) - start) / (end - start)) * plotW; }
+
+    function el(tag, attrs={}, par=svg) {
+      const e = document.createElementNS(NS, tag);
+      for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+      par.appendChild(e);
+      return e;
+    }
+
+    /*
+     * Crea texto via foreignObject+HTML para que el PDF conserve cajas de texto editables.
+     * Usa un div HTML dentro del SVG en vez de <text> SVG (que Chromium descompone glifo a glifo).
+     * opts: sz (font-size), w (font-weight), fill (color), anchor (start|middle|end), ls (letter-spacing), rotate
+     */
+    function txt(x, y, str, o={}) {
+      const sz = o.sz || 13;
+      const fw = o.w || 400;
+      const fill = o.fill || P.ink;
+      const anchor = o.anchor || 'start';
+      const ls = o.ls || '0';
+
+      /* Estimar ancho del texto para dimensionar el foreignObject */
+      const charW = sz * 0.62;
+      const estW = Math.max(str.length * charW + 20, 60);
+      const estH = sz * 1.8;
+
+      /* Ajustar x segun anchor */
+      let fx = x;
+      if (anchor === 'middle') fx = x - estW / 2;
+      else if (anchor === 'end') fx = x - estW;
+
+      /* y en SVG text es baseline; foreignObject usa top-left. Ajustar subiendo ~1.2× font-size */
+      const fy = y - sz * 1.15;
+
+      const fo = el('foreignObject', { x: fx, y: fy, width: estW, height: estH });
+
+      /* Rotacion: aplicamos transform al foreignObject */
+      if (o.rotate) fo.setAttribute('transform', `rotate(${o.rotate},${x},${y})`);
+
+      const div = document.createElement('div');
+      div.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+      div.style.cssText = `
+        font-family: "Lexend","Helvetica Neue",Helvetica,Arial,sans-serif;
+        font-size: ${sz}px;
+        font-weight: ${fw};
+        color: ${fill};
+        letter-spacing: ${ls};
+        white-space: nowrap;
+        line-height: 1;
+        text-align: ${anchor === 'middle' ? 'center' : anchor === 'end' ? 'right' : 'left'};
+        pointer-events: none;
+      `;
+      div.textContent = str;
+      fo.appendChild(div);
+      return fo;
+    }
+
+    function tip(target, title, body) {
+      target.addEventListener('mousemove', e => {
+        tooltip.innerHTML = `<strong>${title}</strong>${body}`;
+        tooltip.classList.add('visible');
+        tooltip.style.left = (e.clientX+16)+'px';
+        tooltip.style.top = (e.clientY+16)+'px';
+      });
+      target.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+    }
+
+    function rr(x,y,w,h,fill,stroke='none',op=1,rx=4,par=svg) {
+      return el('rect', {x,y,width:w,height:h,rx,fill,stroke,'stroke-width':stroke!=='none'?1:0,opacity:op}, par);
+    }
+
+    /* Contador para IDs unicos de gradientes */
+    let gradId = 0;
+
+    /* Crea un linearGradient horizontal: fade-in (transparente→color) o fade-out (color→transparente) */
+    function makeGrad(color, type) {
+      const id = 'grad' + (gradId++);
+      let defs = svg.querySelector('defs');
+      if (!defs) { defs = el('defs'); }
+      const lg = el('linearGradient', {id, x1:'0%', y1:'0%', x2:'100%', y2:'0%'}, defs);
+      if (type === 'fadeIn') {
+        el('stop', {offset:'0%', 'stop-color':color, 'stop-opacity':'0'}, lg);
+        el('stop', {offset:'30%', 'stop-color':color, 'stop-opacity':'1'}, lg);
+      } else {
+        el('stop', {offset:'70%', 'stop-color':color, 'stop-opacity':'1'}, lg);
+        el('stop', {offset:'100%', 'stop-color':color, 'stop-opacity':'0'}, lg);
+      }
+      return `url(#${id})`;
+    }
+
+    /* Arco bezier entre dos puntos */
+    function arc(x1,y1,x2,y2,stroke,o={}) {
+      const dx=x2-x1, dy=y2-y1;
+      const cx1=x1+dx*0.35, cy1=y1, cx2=x2-dx*0.25, cy2=y2-(o.up?Math.abs(dy)*0.3:0);
+      return el('path', {
+        d:`M${x1} ${y1} C${cx1} ${cy1},${cx2} ${cy2},${x2} ${y2}`,
+        fill:'none', stroke, 'stroke-width':o.w||1.2, opacity:o.op||0.4,
+        'stroke-linecap':'round', 'stroke-dasharray':o.dash||'none'
+      });
+    }
+
+    /* ============ DRAW ============ */
+
+    /* Titulo interno SVG */
+    function drawTitle() {
+      txt(M.left, 8, 'Three parallel lines converging towards PICTOS.net', {sz:15, w:500});
+    }
+
+    /* Eje temporal */
+    function drawAxis() {
+      const ay = 56;
+      txt(M.left, 28, 'Oct 2024 — Mar 2026', {sz:11, w:500, fill:P.muted, ls:'0.04em'});
+      const m = new Date(start); m.setDate(1);
+      while (m <= end) {
+        const x = M.left + ((m-start)/(end-start))*plotW;
+        el('line', {x1:x,y1:68,x2:x,y2:H-M.bottom+8,stroke:P.grid,'stroke-width':0.5});
+        el('line', {x1:x,y1:ay,x2:x,y2:ay+5,stroke:P.axis,'stroke-width':1});
+        const show = m.getMonth()%2===0 || (m.getMonth()===9 && m.getFullYear()===2024);
+        if (show) txt(x, ay-7, m.toLocaleDateString('en-GB',{month:'short',year:'numeric'}), {sz:10, fill:P.axis, anchor:'middle'});
+        m.setMonth(m.getMonth()+1);
+      }
+    }
+
+    /* Etiquetas laterales */
+    function drawLabels() {
+      txt(38, LY.ms+6, 'MILESTONES', {sz:10, w:500, fill:P.muted, ls:'0.06em'});
+      txt(38, LY.ctx, 'Literature Review', {sz:17, w:600});
+      txt(38, LY.ctx+16, 'Continuous epistemic process', {sz:11, w:300, fill:P.muted});
+      txt(38, LY.pro, 'Proof-of-concept', {sz:17, w:600});
+      txt(38, LY.pro+16, 'Design (formal modelling)', {sz:11, w:300, fill:P.muted});
+      txt(38, LY.emp, 'Empirical Engagement', {sz:17, w:600});
+      txt(38, LY.emp+16, 'Fieldwork with AAC professionals', {sz:11, w:300, fill:P.muted});
+    }
+
+    /* Anotaciones margen derecho */
+    function drawNotes() {
+      txt(W-80, LY.ctx-22, 'CONTINUOUS REVIEW', {sz:9, fill:P.ctx, w:500, anchor:'end', ls:'0.05em'});
+      /* Etiqueta 'ITERATIVE DESIGN' eliminada — poco contraste sobre fondo azul */
+      txt(W-80, LY.emp-22, 'FIELDWORK + ANALYSIS', {sz:9, fill:P.emp, w:500, anchor:'end', ls:'0.05em'});
+    }
+
+    /* Milestones — sin fecha, solo label */
+    function drawMilestones() {
+      milestones.forEach((item, i) => {
+        const x = sx(item.date);
+        el('line', {x1:x,y1:76,x2:x,y2:LY.ms+18,stroke:P.grid,'stroke-width':1,'stroke-dasharray':'3 4',opacity:0.5});
+        const c = el('circle', {cx:x,cy:LY.ms,r:4.5,fill:P.ink});
+        const anc = i===0?'start': i===milestones.length-1?'end':'middle';
+        const lx = i===0?x+8: i===milestones.length-1?x-8:x;
+        txt(lx, LY.ms-10, item.label, {sz:10, w:500, anchor:anc});
+        tip(c, item.label, `${item.date}<br>${item.note}`);
+      });
+    }
+
+    /* Contextual review — franja continua */
+    function drawContext() {
+      const x0=sx(ctxData.start), x1=sx(ctxData.end), y=LY.ctx+28, h=50;
+      rr(x0, y-h/2, x1-x0, h, P.ctxSoft, 'none', 0.7, 4);
+      const inner = rr(x0+6, y-8, x1-x0-12, 16, P.ctx, 'none', 0.8, 3);
+      /* Label omitido: redundante con la etiqueta lateral */
+      tip(inner, ctxData.label, `${ctxData.start} to ${ctxData.end}<br>${ctxData.note}`);
+
+      ctxData.markers.forEach((mk,i) => {
+        const x=sx(mk.date), above=i%2===0;
+        const mr = el('circle', {cx:x,cy:y,r:i===0||i===ctxData.markers.length-1?4.5:3.5,fill:P.white,stroke:P.ctx,'stroke-width':1.5});
+        const ly = above?y-20:y+36;
+        el('line', {x1:x,y1:y+(above?-6:6),x2:x,y2:above?y-14:y+30,stroke:P.ctx,'stroke-width':0.7,opacity:0.4});
+        txt(x, ly, mk.label, {sz:9.5, w:500, fill:P.ctx, anchor:'middle'});
+        tip(mr, mk.label, mk.date);
+      });
+
+      return { x:x1, y:y+h/2 };
+    }
+
+    /* Barra generica con soporte para fadeIn, fadeOut y texto blanco */
+    function bar(s,e,yPos,h,fill,soft,label,detail,opts={}) {
+      const isEval = opts.eval;
+      const x1=sx(s), x2=sx(e), w=Math.max(12,x2-x1);
+      const g = el('g');
+      const mainFill = isEval ? P.eval : fill;
+      const mainSoft = isEval ? P.evalSoft : soft;
+
+      /* Fondo suave — con gradiente si fade */
+      const bgFill = opts.fadeIn ? makeGrad(mainSoft,'fadeIn') : opts.fadeOut ? makeGrad(mainSoft,'fadeOut') : mainSoft;
+      const bg = rr(x1,yPos,w,h,bgFill,'none',0.7,3,g);
+
+      /* Barra interior — con gradiente si fade */
+      const fgFill = opts.fadeIn ? makeGrad(mainFill,'fadeIn') : opts.fadeOut ? makeGrad(mainFill,'fadeOut') : mainFill;
+      const fg = rr(x1+3,yPos+2,Math.max(6,w-6),Math.max(6,h-4),fgFill,'none',0.8,2,g);
+
+      const fitsInside = w > label.length*7+20;
+      if (fitsInside) {
+        /* Texto blanco sobre barras oscuras para contraste */
+        const labelX = opts.fadeIn ? x1 + w*0.35 : x1+8;
+        txt(labelX, yPos+h/2+4, label, {sz:h>=20?11:10, w:500, fill:'#fff'}).setAttribute('pointer-events','none');
+      } else {
+        el('line',{x1:x2,y1:yPos+h/2,x2:x2+8,y2:yPos+h/2,stroke:mainFill,'stroke-width':0.8,opacity:0.5},g);
+        txt(x2+12, yPos+h/2+4, label, {sz:10.5, w:500, fill:isEval?P.eval:P.ink});
+      }
+      tip(g, label, `${s} to ${e}<br>${detail}`);
+      return {x:x1, x2, y:yPos, h};
+    }
+
+    /* Empirico */
+    function drawEmpirical() {
+      const geo = {};
+      empBars.forEach(b => {
+        const yPos = LY.emp - 24 + b.row * 26;
+        geo[b.key] = bar(b.s, b.e, yPos, b.h, P.emp, P.empSoft, b.label, b.detail, {fadeIn:b.fadeIn, fadeOut:b.fadeOut});
+      });
+      empMilestones.forEach(m => {
+        const x=sx(m.date), y=LY.emp+4;
+        const dm = el('path',{d:`M${x} ${y-7} L${x+7} ${y} L${x} ${y+7} L${x-7} ${y} Z`,fill:P.white,stroke:P.emp,'stroke-width':1.5});
+        txt(x+12, y+4, m.label, {sz:10, w:500, fill:P.emp});
+        tip(dm, m.label, `${m.date}<br>${m.note}`);
+      });
+      return geo;
+    }
+
+    /* Prototipo */
+    function drawPrototype() {
+      const geo = {};
+      proBars.forEach(b => {
+        const yPos = LY.pro - 30 + b.row * 26;
+        geo[b.key] = bar(b.s, b.e, yPos, b.h, P.pro, P.proSoft, b.label, b.detail, {eval:b.eval, fadeIn:b.fadeIn, fadeOut:b.fadeOut});
+      });
+      return geo;
+    }
+
+    /* Barra hub PICTOS.net — tramo grueso destacado al final del carril prototipo */
+    function drawHub() {
+      const x1 = sx(hub.s), x2 = sx(hub.e), w = Math.max(20, x2-x1);
+      /* Se posiciona debajo de las barras del carril prototipo (row 4) */
+      const yPos = LY.pro - 30 + 4 * 26;
+      const h = hub.h;
+      /* Fondo suave amplio */
+      rr(x1-4, yPos-4, w+8, h+8, P.proSoft, P.hubRing, 0.6, 5);
+      /* Barra principal oscura */
+      const hBar = rr(x1, yPos, w, h, P.hub, 'none', 1, 4);
+      /* Etiqueta centrada dentro de la barra */
+      const mx = x1 + w/2;
+      txt(mx, yPos + h/2 + 4, hub.label, {sz:14, w:700, fill:'#fff', anchor:'middle'});
+
+      /* Badge UNDERSTAND → COMPOSE → PRODUCE debajo de la barra */
+      const badgeY = yPos + h + 8;
+      const badgeW = 230, badgeH = 18;
+      const badgeX = mx - badgeW/2;
+      rr(badgeX, badgeY, badgeW, badgeH, P.emp, 'none', 0.9, 9);
+      txt(mx, badgeY + badgeH/2 + 4, hub.sub, {sz:8.5, w:600, fill:'#fff', anchor:'middle', ls:'0.04em'});
+
+      tip(hBar, hub.label, 'Three-stage pictogram generator and authoring interface. Workshop-ready modular architecture. Convergence of all three research lines.');
+      return { x1, x2, y: yPos, h, mx, my: yPos + h/2 };
+    }
+
+    /* Arcos de convergencia desde los tres carriles hacia la barra hub */
+    function drawArcs(ctxEnd, empGeo, proGeo, h) {
+      const hx1=h.x1, hx2=h.x2, hy=h.my;
+
+      /* Desde prototipo — arcos cortos horizontales hacia el borde izquierdo de la barra */
+      ['early-proto','pipeline','support'].forEach(k => {
+        const b = proGeo[k]; if(!b) return;
+        arc(b.x2, b.y+b.h/2, hx1, hy, P.pro, {w:1.2, op:0.35});
+      });
+
+      /* Desde empirico (deep-analysis y analysis-tool) — arcos ascendentes */
+      ['deep-analysis','analysis-tool'].forEach(k => {
+        const b = empGeo[k]; if(!b) return;
+        const fx = sx('2026-02-01');
+        arc(fx, b.y+b.h/2, h.mx, h.y+h.h, P.emp, {w:1.2, op:0.35, up:false});
+      });
+
+      /* Desde contextual review — arco descendente */
+      arc(sx('2026-02-01'), ctxEnd.y, h.mx, h.y, P.ctx, {w:1, op:0.3, dash:'4 4', up:false});
+
+      /* Hacia VCSCI/ICAP (evaluation) */
+      const ev = proGeo['vcsci-icap'];
+      if (ev) {
+        arc(hx2, hy, ev.x2-16, ev.y+ev.h/2, P.eval, {w:1.2, op:0.45, dash:'5 5'});
+        txt(ev.x2+10, ev.y+ev.h/2+4, 'evaluation', {sz:9.5, w:500, fill:P.eval});
+      }
+
+      /* Flechas tematicas: desde literatura y empirico hacia prototipo central */
+      const proto = proGeo['early-proto'];
+      const evalBar = proGeo['vcsci-icap'];
+      const pipe = proGeo['pipeline'];
+
+      /* "What constitutes a good pictogram" desde Speech-Acts (ctx) hacia proto+eval */
+      const saX = sx('2025-09-15');  /* A la altura de Speech-Acts */
+      const ctxBarY = ctxEnd.y;
+      if (proto) {
+        arc(saX, ctxBarY, proto.x+((proto.x2-proto.x)*0.55), proto.y, P.ctx, {w:1.2, op:0.4, dash:'4 3'});
+      }
+      /* Desde deep-analysis (empirico) hacia proto+eval */
+      const da = empGeo['deep-analysis'];
+      if (da && proto) {
+        const daX = sx('2025-10-15');
+        arc(daX, da.y, proto.x+((proto.x2-proto.x)*0.55), proto.y+proto.h, P.emp, {w:1.2, op:0.4, dash:'4 3'});
+      }
+      /* Etiqueta compartida */
+      if (proto) {
+        const lx = proto.x + (proto.x2-proto.x)*0.55;
+        txt(lx+6, proto.y-6, 'What constitutes a good pictogram?', {sz:8.5, w:400, fill:P.muted, anchor:'start'});
+      }
+
+      /* "AAC professional workflow" desde interviews/analysis hacia pipeline experiments */
+      if (da && pipe) {
+        const wfX = sx('2025-12-01');
+        arc(wfX, da.y, pipe.x-4, pipe.y+pipe.h/2, P.emp, {w:1.2, op:0.4, dash:'4 3'});
+        txt(pipe.x-8, pipe.y+pipe.h/2-8, 'AAC professional workflow', {sz:8.5, w:400, fill:P.emp, anchor:'end'});
+      }
+    }
+
+    /* Orquestacion */
+    function draw() {
+      drawTitle();
+      drawAxis();
+      drawLabels();
+      drawNotes();
+      drawMilestones();
+      const ctxEnd = drawContext();
+      const empGeo = drawEmpirical();
+      const proGeo = drawPrototype();
+      const h = drawHub();
+      drawArcs(ctxEnd, empGeo, proGeo, h);
+    }
+
+    draw();
+  </script>
+</body>
+</html>

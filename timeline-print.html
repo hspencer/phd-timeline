@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thesis Timeline Proposal</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #1a1a1a;
+      --muted: #777777;
+      --grid: #e0e0e0;
+      --axis: #999999;
+      --context-fill: #555555;
+      --context-soft: #f0f0f0;
+      --emp-fill: #888888;
+      --emp-soft: #f0f0f0;
+      --proto-fill: #444444;
+      --proto-soft: #f0f0f0;
+      --eval-fill: #999999;
+      --eval-soft: #f5f5f5;
+      --hub-fill: #1a1a1a;
+      --hub-soft: #e8e8e8;
+      --white: #ffffff;
+    }
+
+    @page { margin: 12mm; }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .wrap {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 28px 24px 36px;
+    }
+
+    .header {
+      margin-bottom: 16px;
+    }
+
+    .title-block h1 {
+      margin: 0 0 6px;
+      font-size: clamp(26px, 3.6vw, 44px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      font-weight: 600;
+    }
+
+    .title-block p {
+      margin: 0;
+      max-width: 64ch;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    .panel {
+      border: 1px solid var(--grid);
+      border-radius: 8px;
+      padding: 18px 14px 14px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    .caption {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.45;
+    }
+
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10;
+      max-width: 280px;
+      background: rgba(26, 26, 26, 0.92);
+      color: #fff;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.4;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 100ms ease, transform 100ms ease;
+    }
+
+    .tooltip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .tooltip strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 12px;
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    @media print {
+      .tooltip { display: none; }
+      .panel { border-color: #ccc; }
+    }
+
+    @media (max-width: 980px) {
+      .header,
+      .caption {
+        grid-template-columns: 1fr;
+      }
+      .wrap {
+        padding: 18px 14px 28px;
+      }
+      .panel {
+        padding: 14px 8px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="title-block">
+        <h1>Thesis timeline</h1>
+        <p>
+          Making Pictogram Construction Visible: Designing Generative Tools for Professional AAC Practice
+        </p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <svg id="chart" viewBox="0 0 1440 760" role="img" aria-label="Thesis timeline with three tracks converging towards pictos-net"></svg>
+      <div class="caption">
+        <div>
+          This layout favours structure over completeness. The contextual review is treated as a long-duration epistemic process rather than as many equal-sized micro-events.
+        </div>
+        <div>
+          The prototype track is the only lane with explicit convergence arcs. <code>VCSCI / ICAP</code> is drawn as adjacent to <code>pictos-net</code>, not as one of its build inputs.
+        </div>
+      </div>
+      <div class="footer-note">
+        Self-contained HTML proposal. Rendered with inline SVG and plain JavaScript so the file remains portable.
+      </div>
+    </div>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const svg = document.getElementById('chart');
+    const NS = 'http://www.w3.org/2000/svg';
+    const tooltip = document.getElementById('tooltip');
+
+    const width = 1440;
+    const height = 760;
+    const margin = { top: 86, right: 90, bottom: 74, left: 220 };
+    const plotWidth = width - margin.left - margin.right;
+
+    const palette = {
+      ink: '#1a1a1a',
+      muted: '#777777',
+      grid: '#e0e0e0',
+      axis: '#999999',
+      contextFill: '#555555',
+      contextSoft: '#f0f0f0',
+      empiricalFill: '#888888',
+      empiricalSoft: '#f0f0f0',
+      protoFill: '#444444',
+      protoSoft: '#f0f0f0',
+      evalFill: '#999999',
+      evalSoft: '#f5f5f5',
+      hubFill: '#1a1a1a',
+      hubSoft: '#e8e8e8',
+      white: '#ffffff'
+    };
+
+    const start = new Date('2024-10-01');
+    const end = new Date('2026-03-06');
+    const laneY = {
+      milestones: 118,
+      context: 246,
+      empirical: 392,
+      prototype: 548
+    };
+
+    const laneHeights = {
+      context: 56,
+      empirical: 76,
+      prototype: 96
+    };
+
+    const milestoneData = [
+      { date: '2024-10-01', label: 'Thesis initiation', note: 'Official PhD commencement.' },
+      { date: '2025-04-08', label: 'Ethics approval', note: 'AUTEC ethics approval granted.' },
+      { date: '2025-09-11', label: 'Postgraduate Research Symposium', note: 'Postgraduate Research Symposium milestone.' },
+      { date: '2025-11-03', label: 'PGR9 Presentation', note: 'PGR9 presentation milestone.' },
+      { date: '2026-03-06', label: 'Current state', note: 'Reference date for this snapshot.' }
+    ];
+
+    const contextual = {
+      start: '2024-10-18',
+      end: '2026-03-04',
+      label: 'Contextual review',
+      subtitle: 'AAC, XAI, semantics, activity theory, dual coding, standards, autism, ICAP',
+      note: 'Collapsed as a continuous stream to represent an ongoing review process rather than many isolated episodes.',
+      markers: [
+        { date: '2024-10-18', label: 'Framing journal' },
+        { date: '2025-08-05', label: 'PRS' },
+        { date: '2025-10-20', label: 'CC' },
+        { date: '2026-01-22', label: 'Corpus in mind' },
+        { date: '2026-01-30', label: 'Three-part structure' },
+        { date: '2026-03-04', label: 'Review page' }
+      ]
+    };
+
+    const empiricalBars = [
+      {
+        key: 'pre-ethics',
+        start: '2025-02-13',
+        end: '2025-02-28',
+        y: laneY.empirical - 24,
+        h: 24,
+        label: 'Pre-ethics conversations',
+        detail: 'Exploratory conversations before formal ethics approval.'
+      },
+      {
+        key: 'interviews',
+        start: '2025-05-06',
+        end: '2025-06-25',
+        y: laneY.empirical + 8,
+        h: 26,
+        label: 'Formal interviews',
+        detail: 'Ethics-approved interview series with AAC professionals.'
+      },
+      {
+        key: 'analysis',
+        start: '2025-08-20',
+        end: '2026-03-06',
+        y: laneY.empirical + 42,
+        h: 22,
+        label: 'Interview analysis',
+        detail: 'Longer analytical phase after fieldwork, including thematic organisation.'
+      },
+      {
+        key: 'analysis-tool',
+        start: '2025-11-20',
+        end: '2026-03-06',
+        y: laneY.empirical + 70,
+        h: 18,
+        label: 'Analysis tool development',
+        detail: 'Development of the interview-analysis tool as part of empirical processing.'
+      }
+    ];
+
+    const empiricalMilestones = [
+      {
+        date: '2026-02-12',
+        label: 'Follow-up interview',
+        note: 'Follow-up session with participants.'
+      }
+    ];
+
+    const prototypeBars = [
+      {
+        key: 'early-prototyping',
+        start: '2025-03-28',
+        end: '2026-01-21',
+        y: laneY.prototype - 34,
+        h: 26,
+        label: 'Early prototyping',
+        detail: 'Practice-based prototyping before the concentrated pictos-net sprint.'
+      },
+      {
+        key: 'vcsci-icap',
+        start: '2025-08-25',
+        end: '2026-02-27',
+        y: laneY.prototype + 2,
+        h: 24,
+        label: 'VCSCI / ICAP framework',
+        detail: 'Evaluation and validation framework running adjacent to the main build track.',
+        evaluation: true
+      },
+      {
+        key: 'pipeline',
+        start: '2026-01-22',
+        end: '2026-01-27',
+        y: laneY.prototype + 38,
+        h: 18,
+        label: 'Pipeline experiments',
+        detail: 'Pipeliner, bitmap, and prototype experiments.'
+      },
+      {
+        key: 'support',
+        start: '2026-01-30',
+        end: '2026-02-10',
+        y: laneY.prototype + 62,
+        h: 18,
+        label: 'Collector / editor tooling',
+        detail: 'Collector and editor support tooling feeding the proof-of-concept.'
+      },
+      {
+        key: 'pictos-net',
+        start: '2026-01-26',
+        end: '2026-03-05',
+        y: laneY.prototype + 88,
+        h: 28,
+        label: 'pictos-net sprint',
+        detail: 'Main proof-of-concept sprint for pictos-net.',
+        hub: true
+      }
+    ];
+
+    /* Convierte un string de fecha a objeto Date */
+    function date(input) {
+      return new Date(input + 'T00:00:00');
+    }
+
+    /* Escala lineal de fecha a posicion horizontal en el SVG */
+    function scaleX(value) {
+      const total = end - start;
+      const pos = date(value) - start;
+      return margin.left + (pos / total) * plotWidth;
+    }
+
+    /* Crea un elemento SVG y lo agrega a un padre */
+    function create(tag, attrs = {}, parent = svg) {
+      const el = document.createElementNS(NS, tag);
+      for (const [key, value] of Object.entries(attrs)) {
+        el.setAttribute(key, value);
+      }
+      parent.appendChild(el);
+      return el;
+    }
+
+    /* Crea un elemento de texto SVG con opciones de estilo.
+       opts.rotate permite rotar el texto (grados) alrededor de su punto de anclaje. */
+    function labelText(x, y, text, opts = {}) {
+      const attrs = {
+        x, y,
+        fill: opts.fill || palette.ink,
+        'font-size': opts.size || 14,
+        'font-weight': opts.weight || 400,
+        'font-family': '"IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif',
+        'text-anchor': opts.anchor || 'start',
+        'letter-spacing': opts.tracking || 0
+      };
+      if (opts.rotate) {
+        attrs.transform = `rotate(${opts.rotate}, ${x}, ${y})`;
+      }
+      const t = create('text', attrs);
+      t.textContent = text;
+      return t;
+    }
+
+    /* Agrega tooltip interactivo a un elemento SVG */
+    function addTooltip(target, title, body) {
+      target.addEventListener('mousemove', (event) => {
+        tooltip.innerHTML = `<strong>${title}</strong>${body}`;
+        tooltip.classList.add('visible');
+        tooltip.style.left = (event.clientX + 16) + 'px';
+        tooltip.style.top = (event.clientY + 16) + 'px';
+      });
+      target.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+    }
+
+    /* Dibuja un rectangulo redondeado en el SVG */
+    function roundedRect(x, y, w, h, fill, stroke, opacity = 1, rx = 6, klass = '', parent = svg) {
+      const rect = document.createElementNS(NS, 'rect');
+      rect.setAttribute('x', x);
+      rect.setAttribute('y', y);
+      rect.setAttribute('width', w);
+      rect.setAttribute('height', h);
+      rect.setAttribute('rx', rx);
+      rect.setAttribute('fill', fill);
+      rect.setAttribute('stroke', stroke);
+      rect.setAttribute('stroke-width', stroke !== 'none' ? 1 : 0);
+      rect.setAttribute('opacity', opacity);
+      if (klass) rect.setAttribute('class', klass);
+      parent.appendChild(rect);
+      return rect;
+    }
+
+    /* Dibuja el eje temporal con lineas de grilla mensual */
+    function drawAxis() {
+      const axisY = 58;
+      const title = labelText(margin.left, 28, 'October 2024 — March 2026', { size: 12, weight: 500, fill: palette.muted, tracking: '0.06em' });
+
+      const month = new Date(start);
+      month.setDate(1);
+      while (month <= end) {
+        const x = margin.left + ((month - start) / (end - start)) * plotWidth;
+        create('line', { x1: x, y1: 72, x2: x, y2: height - margin.bottom + 8, stroke: palette.grid, 'stroke-width': 0.5 });
+        create('line', { x1: x, y1: axisY, x2: x, y2: axisY + 6, stroke: palette.axis, 'stroke-width': 1 });
+        /* Mostrar todos los meses con etiquetas rotadas -45° para que quepan */
+        labelText(x, axisY - 6, month.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }), {
+          size: 10,
+          fill: palette.axis,
+          anchor: 'end',
+          weight: 400,
+          rotate: -45
+        });
+        month.setMonth(month.getMonth() + 1);
+      }
+    }
+
+    /* Dibuja las etiquetas laterales de cada carril */
+    function drawLaneLabels() {
+      labelText(38, laneY.milestones + 8, 'MILESTONES', { size: 11, weight: 600, fill: palette.muted, tracking: '0.08em' });
+      labelText(38, laneY.context + 2, 'Contextual Review', { size: 18, weight: 600 });
+      labelText(38, laneY.context + 20, 'Continuous inquiry', { size: 12, weight: 400, fill: palette.muted });
+      labelText(38, laneY.empirical + 2, 'Empirical Engagement', { size: 18, weight: 600 });
+      labelText(38, laneY.empirical + 20, 'Interviews and analysis', { size: 12, weight: 400, fill: palette.muted });
+      labelText(38, laneY.prototype + 2, 'Prototype Design', { size: 18, weight: 600 });
+      labelText(38, laneY.prototype + 20, 'Build track with convergence', { size: 12, weight: 400, fill: palette.muted });
+    }
+
+    /* Dibuja el fondo sutil de cada carril */
+    function drawLaneBackground(y, h, fill) {
+      roundedRect(margin.left - 10, y - h / 2, plotWidth + 20, h, fill, 'none', 1, 4);
+    }
+
+    /* Dibuja los hitos principales con etiquetas rotadas -45° para evitar traslape */
+    function drawMilestones() {
+      milestoneData.forEach((item, index) => {
+        const x = scaleX(item.date);
+        create('line', { x1: x, y1: 82, x2: x, y2: laneY.milestones + 22, stroke: palette.grid, 'stroke-width': 1, 'stroke-dasharray': '3 4', opacity: 0.6 });
+        const c = create('circle', { cx: x, cy: laneY.milestones, r: 5, fill: palette.ink });
+        labelText(x + 4, laneY.milestones - 14, item.label, { size: 10.5, weight: 500, fill: palette.ink, anchor: 'end', rotate: -45 });
+        labelText(x + 4, laneY.milestones + 22, item.date, { size: 9.5, weight: 400, fill: palette.muted, anchor: 'start', rotate: -45 });
+        addTooltip(c, item.label, `${item.date}<br>${item.note}`);
+      });
+    }
+
+    /* Dibuja la franja continua de revision contextual con marcadores internos */
+    function drawContextStream() {
+      const x0 = scaleX(contextual.start);
+      const x1 = scaleX(contextual.end);
+      const y = laneY.context + 30;
+      const h = 56;
+      roundedRect(x0, y - h / 2, x1 - x0, h, palette.contextSoft, 'none', 1, 4);
+      const inner = roundedRect(x0 + 8, y - 10, x1 - x0 - 16, 20, palette.contextFill, 'none', 0.85, 3);
+      labelText(x0 + 14, y - 20, contextual.label, { size: 14, weight: 600, fill: palette.ink });
+      labelText(x0 + 14, y + 26, contextual.subtitle, { size: 11, weight: 400, fill: palette.muted });
+      addTooltip(inner, contextual.label, `${contextual.start} to ${contextual.end}<br>${contextual.note}`);
+
+      contextual.markers.forEach((item, idx) => {
+        const x = scaleX(item.date);
+        const marker = create('circle', {
+          cx: x,
+          cy: y,
+          r: idx === 0 || idx === contextual.markers.length - 1 ? 5 : 4,
+          fill: palette.white,
+          stroke: palette.contextFill,
+          'stroke-width': 2
+        });
+        /* Etiquetas alternas arriba/abajo, rotadas -45° para evitar traslape */
+        const above = idx % 2 === 0;
+        const labelY = above ? y - 22 : y + 38;
+        create('line', {
+          x1: x, y1: y + 8, x2: x, y2: above ? y - 16 : y + 32,
+          stroke: palette.contextFill,
+          'stroke-width': 0.8,
+          opacity: 0.5
+        });
+        labelText(x, labelY, item.label, { size: 10, weight: 500, fill: palette.contextFill, anchor: 'end', rotate: -45 });
+        addTooltip(marker, item.label, item.date);
+      });
+    }
+
+    /* Dibuja una barra de actividad horizontal con etiqueta interna */
+    function drawBar(item, fill, soft, stroke) {
+      const x = scaleX(item.start);
+      const x2 = scaleX(item.end);
+      const g = create('g');
+      const bg = roundedRect(x, item.y, Math.max(12, x2 - x), item.h, soft, 'none', 1, 3, '', g);
+      const fg = roundedRect(x + 4, item.y + 3, Math.max(8, x2 - x - 8), Math.max(8, item.h - 6), fill, 'none', 0.85, 2, '', g);
+      if (item.hub) {
+        fg.setAttribute('fill', palette.hubFill);
+        bg.setAttribute('fill', palette.hubSoft);
+      }
+      if (item.evaluation) {
+        fg.setAttribute('fill', palette.evalFill);
+        bg.setAttribute('fill', palette.evalSoft);
+      }
+      labelText(x + 10, item.y + item.h / 2 + 4, item.label, {
+        size: item.h >= 24 ? 12 : 11,
+        weight: 500,
+        fill: item.hub ? palette.white : palette.ink
+      }).setAttribute('pointer-events', 'none');
+      addTooltip(g, item.label, `${item.start} to ${item.end}<br>${item.detail}`);
+      return { x, x2, y: item.y, h: item.h };
+    }
+
+    /* Dibuja las barras empiricas y el hito de follow-up */
+    function drawEmpirical() {
+      empiricalBars.forEach(item => drawBar(item, palette.empiricalFill, palette.empiricalSoft, 'none'));
+      empiricalMilestones.forEach(item => {
+        const x = scaleX(item.date);
+        const y = laneY.empirical + 8;
+        const diamond = create('path', {
+          d: `M ${x} ${y - 8} L ${x + 8} ${y} L ${x} ${y + 8} L ${x - 8} ${y} Z`,
+          fill: palette.white,
+          stroke: palette.empiricalFill,
+          'stroke-width': 2
+        });
+        labelText(x + 14, y + 4, item.label, { size: 11, weight: 500, fill: palette.empiricalFill });
+        addTooltip(diamond, item.label, `${item.date}<br>${item.note}`);
+      });
+    }
+
+    /* Dibuja el carril de prototipos con arcos de convergencia hacia pictos-net */
+    function drawProtoConvergence() {
+      const geometry = {};
+      prototypeBars.forEach(item => {
+        geometry[item.key] = drawBar(item, palette.protoFill, palette.protoSoft, 'none');
+      });
+
+      const hub = geometry['pictos-net'];
+      const evalBar = geometry['vcsci-icap'];
+      const joiners = ['early-prototyping', 'pipeline', 'support'];
+
+      joiners.forEach((key, idx) => {
+        const item = geometry[key];
+        const x1 = item.x2;
+        const y1 = item.y + item.h / 2;
+        const x2 = hub.x + 18;
+        const y2 = hub.y + hub.h / 2;
+        const cx1 = x1 + 42;
+        const cy1 = y1;
+        const cx2 = x2 - 46;
+        const cy2 = y2 - 16 + idx * 14;
+        const path = create('path', {
+          d: `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`,
+          fill: 'none',
+          stroke: palette.protoFill,
+          'stroke-width': 1.5,
+          opacity: 0.5,
+          'stroke-linecap': 'round'
+        });
+        addTooltip(path, 'Convergence arc', 'Prototype work feeding into pictos-net.');
+      });
+
+      const startX = hub.x + (scaleX('2026-03-05') - scaleX('2026-01-26')) + 6;
+      const startY = hub.y + hub.h / 2;
+      const endX = evalBar.x + 22;
+      const endY = evalBar.y + evalBar.h / 2;
+      create('path', {
+        d: `M ${startX} ${startY} C ${startX + 36} ${startY - 12}, ${endX - 30} ${endY - 32}, ${endX} ${endY}`,
+        fill: 'none',
+        stroke: palette.evalFill,
+        'stroke-width': 1.5,
+        opacity: 0.6,
+        'stroke-dasharray': '5 5',
+        'stroke-linecap': 'round'
+      });
+      labelText(endX + 22, endY + 4, 'evaluation layer', { size: 10.5, weight: 500, fill: palette.evalFill });
+    }
+
+    /* Dibuja las anotaciones de seccion en el margen derecho */
+    function drawSectionNotes() {
+      labelText(width - 84, laneY.context - 24, 'CONTINUOUS', { size: 10, fill: palette.contextFill, weight: 500, anchor: 'end', tracking: '0.06em' });
+      labelText(width - 84, laneY.empirical - 24, 'FIELDWORK + ANALYSIS', { size: 10, fill: palette.empiricalFill, weight: 500, anchor: 'end', tracking: '0.06em' });
+      labelText(width - 84, laneY.prototype - 24, 'BUILD + VALIDATION', { size: 10, fill: palette.protoFill, weight: 500, anchor: 'end', tracking: '0.06em' });
+    }
+
+    /* Dibuja el titulo interno del grafico SVG */
+    function drawTitleBlock() {
+      labelText(margin.left, 6, 'A thesis timeline with three differentiated temporal logics', { size: 16, weight: 600, fill: palette.ink });
+    }
+
+    /* Funcion principal que orquesta todo el dibujo */
+    function draw() {
+      drawTitleBlock();
+      drawAxis();
+      drawLaneBackground(laneY.context + 30, 100, '#fafafa');
+      drawLaneBackground(laneY.empirical + 30, 118, '#fafafa');
+      drawLaneBackground(laneY.prototype + 44, 142, '#fafafa');
+      drawLaneLabels();
+      drawSectionNotes();
+      drawMilestones();
+      drawContextStream();
+      drawEmpirical();
+      drawProtoConvergence();
+    }
+
+    draw();
+  </script>
+</body>
+</html>
