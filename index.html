@@ -239,13 +239,13 @@
         const dateStr = cur.toISOString().split('T')[0];
         const commitCount = realCommits[dateStr] || 0;
 
-        /* Mapear commits a nivel de intensidad (0-4) */
+        /* Mapear commits a nivel de intensidad (0-4) - escala exagerada para mayor contraste */
         let level = 0;
         if (commitCount > 0) {
-          if (commitCount >= 20) level = 4;
-          else if (commitCount >= 10) level = 3;
-          else if (commitCount >= 5) level = 2;
-          else level = 1;
+          if (commitCount >= 6) level = 4;      /* azul intenso: 6+ commits */
+          else if (commitCount >= 3) level = 3;  /* azul medio-alto: 3-5 commits */
+          else if (commitCount >= 2) level = 2;  /* azul medio-bajo: 2 commits */
+          else level = 1;                        /* azul claro: 1 commit */
         }
 
         daily.push({
