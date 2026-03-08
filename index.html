@@ -140,7 +140,7 @@
     const end   = new Date('2026-03-06');
 
     /* Posiciones Y: milestones, contextual, prototipo (al medio), empirico (abajo) */
-    const LY = { ms: 130, ctx: 250, pro: 410, emp: 580 };
+    const LY = { ms: 130, ctx: 250, pro: 410, emp: 610 };
 
     /* ============ DATOS ============ */
 
@@ -203,7 +203,7 @@
     ];
 
     /* Barra hub PICTOS.net — tramo grueso destacado en el carril de prototipo */
-    const hub = { s:'2026-01-22', e:'2026-03-06', h:26, label:'PICTOS.net', sub:'UNDERSTAND → COMPOSE → PRODUCE' };
+    const hub = { s:'2026-01-22', e:'2026-03-06', h:22, label:'PICTOS.net', sub:'UNDERSTAND → COMPOSE → PRODUCE' };
 
     /* Generar datos de actividad diaria para heatmap estilo GitHub */
     function generateDailyActivity() {
@@ -425,8 +425,8 @@
       ctxData.markers.forEach((mk,i) => {
         const x=sx(mk.date), above=i%2===0;
         const mr = el('circle', {cx:x,cy:y,r:i===0||i===ctxData.markers.length-1?4.5:3.5,fill:P.white,stroke:P.ctx,'stroke-width':1.5});
-        const ly = above?y-20:y+36;
-        el('line', {x1:x,y1:y+(above?-6:6),x2:x,y2:above?y-14:y+30,stroke:P.ctx,'stroke-width':0.7,opacity:0.4});
+        const ly = above?y-28:y+36;
+        el('line', {x1:x,y1:y+(above?-6:6),x2:x,y2:above?y-22:y+30,stroke:P.ctx,'stroke-width':0.7,opacity:0.4});
         txt(x, ly, mk.label, {sz:9.5, w:500, fill:P.ctx, anchor:'middle'});
         tip(mr, mk.label, mk.date);
       });
@@ -532,8 +532,8 @@
     /* Barra hub PICTOS.net — tramo grueso destacado al final del carril prototipo */
     function drawHub() {
       const x1 = sx(hub.s), x2 = sx(hub.e), w = Math.max(20, x2-x1);
-      /* Se posiciona debajo de las barras del carril prototipo (row 5, más abajo) */
-      const yPos = LY.pro - 10 + 5 * 26;
+      /* Se posiciona debajo de las barras del carril prototipo (row 4) */
+      const yPos = LY.pro - 10 + 4 * 26;
       const h = hub.h;
       /* Fondo suave amplio */
       rr(x1-4, yPos-4, w+8, h+8, P.proSoft, P.hubRing, 0.6, 5);
