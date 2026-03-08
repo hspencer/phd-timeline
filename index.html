@@ -605,7 +605,10 @@
       if (da && pipe) {
         const wfX = sx('2025-12-01');
         arc(wfX, da.y, pipe.x-4, pipe.y+pipe.h/2, P.emp, {w:1.2, op:0.4, dash:'4 3'});
-        txt(pipe.x-8, pipe.y+pipe.h/2-8, 'AAC professional workflow', {sz:8.5, w:400, fill:P.emp, anchor:'end'});
+        /* Etiqueta a medio camino del conector */
+        const midY = (da.y + pipe.y+pipe.h/2) / 2;
+        const midX = (wfX + pipe.x-4) / 2;
+        txt(midX, midY, 'AAC professional workflow', {sz:8.5, w:400, fill:P.emp, anchor:'middle'});
       }
     }
 
