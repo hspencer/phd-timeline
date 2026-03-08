@@ -497,7 +497,7 @@
       const g = el('g');
 
       /* Etiqueta superior */
-      txt(M.left, baseY - 6, 'Daily development activity', {sz:9, w:500, fill:P.muted, ls:'0.04em'});
+      txt(M.left, baseY - 6, 'Development activity from GitHub commits', {sz:9, w:500, fill:P.muted, ls:'0.04em'});
 
       prototypeActivity.forEach((day) => {
         /* Calcular posición X usando la escala temporal global */
@@ -541,7 +541,7 @@
       const hBar = rr(x1, yPos, w, h, P.hub, 'none', 1, 4);
       /* Etiqueta centrada dentro de la barra */
       const mx = x1 + w/2;
-      txt(mx, yPos + h/2 + 7, hub.label, {sz:14, w:700, fill:'#fff', anchor:'middle'});
+      txt(mx, yPos + h/2 + 8, hub.label, {sz:14, w:700, fill:'#fff', anchor:'middle'});
 
       /* Subtítulo UNDERSTAND → COMPOSE → PRODUCE debajo de la barra (solo texto, sin fondo) */
       const badgeY = yPos + h + 22;

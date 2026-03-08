@@ -9,13 +9,13 @@ This visualization maps three parallel lines of doctoral work converging towards
 - **Empirical Engagement**: Fieldwork and analysis with AAC professionals
 - **Proof-of-concept**: Iterative development and design (formal modelling)
 
-The timeline includes a GitHub-style activity heatmap showing daily development intensity throughout the research period.
+The timeline includes a GitHub-style activity heatmap showing **real commit activity** from the actual development repositories throughout the research period.
 
 ## Data Sources
 
-- Research milestones and activity periods
-- GitHub commit history from development work
-- LogSeq daily journal entries tracking research activities
+- Research milestones and project phases
+- **Real GitHub commits** from PICTOS.net development repositories
+- LogSeq daily journal entries documenting research activities
 
 ## Technology
 
