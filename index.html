@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Thesis Timeline</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -205,46 +206,36 @@
     /* Barra hub PICTOS.net — tramo grueso destacado en el carril de prototipo */
     const hub = { s:'2026-01-22', e:'2026-03-06', h:22, label:'PICTOS.net', sub:'UNDERSTAND → COMPOSE → PRODUCE' };
 
-    /* Generar datos de actividad diaria para heatmap estilo GitHub */
+    /* Datos reales de commits de GitHub (313 commits de repos PICTOS.net) */
+    const realCommits = {"2024-11-27":1,"2024-11-28":1,"2024-11-29":1,"2025-07-01":1,"2025-07-31":3,"2025-09-30":4,"2025-10-01":5,"2025-10-22":3,"2025-10-31":4,"2025-11-01":2,"2025-11-11":1,"2025-11-12":3,"2025-11-13":5,"2025-11-14":3,"2025-11-17":7,"2025-11-18":5,"2025-11-20":5,"2025-11-23":3,"2025-11-27":1,"2025-12-11":1,"2025-12-15":4,"2026-01-22":9,"2026-01-23":9,"2026-01-25":2,"2026-01-26":6,"2026-01-27":37,"2026-01-28":9,"2026-01-30":4,"2026-01-31":32,"2026-02-01":14,"2026-02-02":2,"2026-02-03":4,"2026-02-04":1,"2026-02-08":1,"2026-02-09":2,"2026-02-10":11,"2026-02-12":7,"2026-02-18":8,"2026-02-19":10,"2026-02-20":4,"2026-02-23":5,"2026-02-24":2,"2026-02-26":2,"2026-03-01":5,"2026-03-02":26,"2026-03-03":7,"2026-03-04":9,"2026-03-05":17,"2026-03-06":5};
+
+    /* Generar heatmap desde datos reales de commits */
     function generateDailyActivity() {
       const daily = [];
       const cur = new Date('2024-10-01');
       const endDate = new Date('2026-03-06');
 
-      /* Patrones de intensidad por período (nivel base) */
-      const periods = [
-        {start:new Date('2024-10-01'),end:new Date('2024-11-10'),base:0.5},
-        {start:new Date('2024-11-11'),end:new Date('2025-02-16'),base:1.5},
-        {start:new Date('2025-02-17'),end:new Date('2025-03-27'),base:2.5},
-        {start:new Date('2025-03-28'),end:new Date('2025-05-04'),base:3.5},
-        {start:new Date('2025-05-05'),end:new Date('2025-06-15'),base:2},
-        {start:new Date('2025-06-16'),end:new Date('2025-08-24'),base:3.5},
-        {start:new Date('2025-08-25'),end:new Date('2025-12-21'),base:4},
-        {start:new Date('2025-12-22'),end:new Date('2026-01-04'),base:0.5},
-        {start:new Date('2026-01-05'),end:new Date('2026-03-06'),base:4}
-      ];
+      /* Encontrar máximo de commits para escalar */
+      const maxCommits = Math.max(...Object.values(realCommits));
 
       while (cur <= endDate) {
-        const dow = cur.getDay(); /* 0=domingo, 6=sábado */
+        const dateStr = cur.toISOString().split('T')[0];
+        const commitCount = realCommits[dateStr] || 0;
 
-        /* Encontrar período actual */
-        let baseLevel = 2;
-        for (const p of periods) {
-          if (cur >= p.start && cur <= p.end) { baseLevel = p.base; break; }
+        /* Mapear commits a nivel de intensidad (0-4) */
+        let level = 0;
+        if (commitCount > 0) {
+          if (commitCount >= 20) level = 4;
+          else if (commitCount >= 10) level = 3;
+          else if (commitCount >= 5) level = 2;
+          else level = 1;
         }
 
-        /* Ajustar por día de semana (menos actividad en fines de semana) */
-        let level = baseLevel;
-        if (dow === 0 || dow === 6) level = Math.max(0, level - 2);
-
-        /* Agregar variabilidad natural (+/- 1) */
-        const variance = Math.random() > 0.5 ? 1 : -1;
-        level = Math.round(Math.max(0, Math.min(4, level + variance * 0.3)));
-
         daily.push({
-          date: cur.toISOString().split('T')[0],
+          date: dateStr,
           level: level,
-          day: dow
+          day: cur.getDay(),
+          commits: commitCount
         });
 
         cur.setDate(cur.getDate() + 1);
@@ -511,8 +502,8 @@
         const dateObj = new Date(day.date);
         const dateStr = dateObj.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
         const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][day.day];
-        const activityText = ['No activity', 'Low activity', 'Medium-low', 'Medium-high', 'High activity'][day.level];
-        tip(cell, dateStr, `${dayName}<br>${activityText}`);
+        const commitText = day.commits === 0 ? 'No commits' : day.commits === 1 ? '1 commit' : `${day.commits} commits`;
+        tip(cell, dateStr, `${dayName}<br>${commitText}`);
       });
 
       return g;
