@@ -131,7 +131,7 @@
       proSoft: '#ccdae8',
       eval:    '#8a9a44',   /* oliva para evaluacion */
       evalSoft:'#e4eacc',
-      hub:     '#2a2a2a',   /* negro para el nodo hub */
+      hub:     '#2a4a6d',   /* azul oscuro para el nodo hub */
       hubRing: '#cccccc',
       white:   '#ffffff'
     };
@@ -532,8 +532,8 @@
     /* Barra hub PICTOS.net — tramo grueso destacado al final del carril prototipo */
     function drawHub() {
       const x1 = sx(hub.s), x2 = sx(hub.e), w = Math.max(20, x2-x1);
-      /* Se posiciona debajo de las barras del carril prototipo (row 4) */
-      const yPos = LY.pro - 10 + 4 * 26;
+      /* Se posiciona debajo de las barras del carril prototipo (row 5, más abajo) */
+      const yPos = LY.pro - 10 + 5 * 26;
       const h = hub.h;
       /* Fondo suave amplio */
       rr(x1-4, yPos-4, w+8, h+8, P.proSoft, P.hubRing, 0.6, 5);
@@ -544,7 +544,7 @@
       txt(mx, yPos + h/2 + 6, hub.label, {sz:14, w:700, fill:'#fff', anchor:'middle'});
 
       /* Subtítulo UNDERSTAND → COMPOSE → PRODUCE debajo de la barra (solo texto, sin fondo) */
-      const badgeY = yPos + h + 14;
+      const badgeY = yPos + h + 22;
       txt(mx, badgeY, hub.sub, {sz:9, w:500, fill:P.emp, anchor:'middle', ls:'0.06em', minW:300});
 
       tip(hBar, hub.label, 'Three-stage pictogram generator and authoring interface. Workshop-ready modular architecture. Convergence of all three research lines.');
